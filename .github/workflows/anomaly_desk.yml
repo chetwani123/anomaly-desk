@@ -1,0 +1,35 @@
+# .github/workflows/anomaly_desk.yml
+# Daily pre-market run. Free on any GitHub repo (public or private).
+#
+# SETUP (5 minutes):
+#   1. Create a private repo, add anomaly_desk.py at the root and this file
+#      at .github/workflows/anomaly_desk.yml
+#   2. Repo Settings -> Secrets and variables -> Actions -> add:
+#        ANTHROPIC_API_KEY   (console.anthropic.com -> API keys)
+#        DESK_EMAIL_TO       your inbox
+#        DESK_EMAIL_FROM     a gmail address
+#        DESK_EMAIL_PASS     gmail APP password (myaccount.google.com/apppasswords)
+#   3. Actions tab -> run it once manually to verify, then it runs itself.
+
+name: anomaly-desk
+on:
+  schedule:
+    - cron: "30 13 * * 1-5"   # 13:30 UTC = 6:30am PT, Mon-Fri (pre-market)
+  workflow_dispatch: {}        # manual "Run workflow" button for testing
+
+jobs:
+  desk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install yfinance pandas numpy anthropic
+      - run: python anomaly_desk.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DESK_EMAIL_TO:     ${{ secrets.DESK_EMAIL_TO }}
+          DESK_EMAIL_FROM:   ${{ secrets.DESK_EMAIL_FROM }}
+          DESK_EMAIL_PASS:   ${{ secrets.DESK_EMAIL_PASS }}
