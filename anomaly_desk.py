@@ -286,7 +286,10 @@ def fmt_meanrev(res: dict) -> str:
     return "\n".join(lines)
 
 
-def build_report() -> str:
+def build_report() -> tuple[str, list[str]]:
+    """Returns (report_text, warnings). warnings is non-empty when a research
+    leg failed to complete, so callers can flag a degraded run up front."""
+    warnings: list[str] = []
     closes = fetch_closes(sorted(set(TREND_UNIVERSE + SECTOR_ETFS + MEANREV_UNIVERSE)))
     sections = [
         f"ANOMALY DESK — {datetime.now():%A %b %d, %Y}",
@@ -302,19 +305,34 @@ def build_report() -> str:
                 sections.append(f"\n{name}\n" + claude_research(prompt))
             except Exception as e:                     # research legs are best-effort
                 sections.append(f"\n{name}\n  research call failed: {e}")
+                if "credit balance is too low" in str(e).lower():
+                    warnings.append(f"{name}: Anthropic credit balance exhausted"
+                                    " — top up at console.anthropic.com (Plans & Billing)")
+                else:
+                    warnings.append(f"{name}: research call failed ({type(e).__name__})")
     else:
         sections.append("\n[3][4] quality + PEAD skipped (set ANTHROPIC_API_KEY)")
     sections.append("\n--\nResearch screen, not advice. Verify before acting.")
-    return "\n".join(sections)
+    if warnings:                                       # surface degraded runs up top
+        banner = "\n".join([
+            "!" * 46,
+            "⚠  DEGRADED RUN — some research legs did not complete:",
+            *(f"     • {w}" for w in warnings),
+            "   (price-math strategies [1]/[2]/[5] below are unaffected)",
+            "!" * 46,
+        ])
+        sections.insert(2, "\n" + banner)              # after title + divider
+    return "\n".join(sections), warnings
 
 
-def maybe_email(report: str) -> None:
+def maybe_email(report: str, warnings: list[str]) -> None:
     to, frm, pw = (os.environ.get(k) for k in
                    ("DESK_EMAIL_TO", "DESK_EMAIL_FROM", "DESK_EMAIL_PASS"))
     if not (to and frm and pw):
         return
     msg = MIMEText(f"<pre style='font-family:monospace'>{report}</pre>", "html")
-    msg["Subject"] = f"Anomaly Desk — {datetime.now():%b %d}"
+    flag = "⚠ " if warnings else ""                    # visible in inbox subject line
+    msg["Subject"] = f"{flag}Anomaly Desk — {datetime.now():%b %d}"
     msg["From"], msg["To"] = frm, to
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
         s.login(frm, pw)
@@ -322,9 +340,9 @@ def maybe_email(report: str) -> None:
 
 
 if __name__ == "__main__":
-    rep = build_report()
+    rep, warnings = build_report()
     print(rep)
     try:
-        maybe_email(rep)
+        maybe_email(rep, warnings)
     except Exception as e:
         print(f"\n(email failed: {e})", file=sys.stderr)
