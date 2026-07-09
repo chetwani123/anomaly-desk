@@ -43,9 +43,33 @@ SECTOR_ETFS = ["XLK", "XLF", "XLV", "XLE", "XLI", "XLY",
 
 # Mean-reversion universe: liquid ETFs + megacaps. Liquidity matters because
 # the edge is liquidity PROVISION — thin names don't pay you for panic.
-MEANREV_UNIVERSE = ["SPY", "QQQ", "XLK", "XLF", "XLV", "XLE", "XLI", "XLY",
-                    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "AVGO",
-                    "SOXX", "SMH"]
+# Every single name here was vetted on four gates before inclusion:
+#   liquid (>$1B/day avg dollar volume), moderate vol (<~65% annualized),
+#   durable business, and diversified across sectors (so the top-N picks
+#   aren't all one correlated bet). Names that failed — e.g. AMD/MU/KLAC
+#   (vol >80%), COHR/CRDO/ZS (vol >100%), DE/COP/SHW/AMT/PLD (<$1B/day) —
+#   were deliberately excluded. See screen notes in the repo history.
+MEANREV_UNIVERSE = [
+    # --- ETFs + core megacaps (original) ---
+    "SPY", "QQQ", "XLK", "XLF", "XLV", "XLE", "XLI", "XLY",
+    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "AVGO", "SOXX", "SMH",
+    # --- cybersecurity ---
+    "PANW", "FTNT",
+    # --- power / electrification / industrials ---
+    "GEV", "ETN", "CAT", "HON",
+    # --- financials ---
+    "JPM", "GS",
+    # --- healthcare ---
+    "LLY", "UNH", "ABBV", "MRK", "TMO", "ISRG",
+    # --- consumer staples / discretionary ---
+    "COST", "WMT", "PEP", "HD", "BKNG",
+    # --- energy ---
+    "XOM", "CVX",
+    # --- materials / utilities ---
+    "LIN", "NEE",
+    # --- comm / media / networking / software ---
+    "ANET", "CRM", "NFLX", "TMUS",
+]
 
 MOM_LOOKBACK_D = 126     # ~6 months of trading days
 MOM_SKIP_D = 10          # skip most recent 2 weeks (short-term reversal effect)
